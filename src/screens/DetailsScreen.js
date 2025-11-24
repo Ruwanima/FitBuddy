@@ -27,6 +27,9 @@ const DetailsScreen = ({ route, navigation }) => {
   const { exerciseId } = route.params;
   const [exercise, setExercise] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [remainingTime, setRemainingTime] = useState(0);
+  const [timerInterval, setTimerInterval] = useState(null);
 
   const dispatch = useDispatch();
   const { favorites } = useSelector((state) => state.favorites);
@@ -37,6 +40,12 @@ const DetailsScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     loadExerciseDetails();
+
+    return () => {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
+    };
   }, [exerciseId]);
 
   const loadExerciseDetails = async () => {
@@ -75,6 +84,55 @@ const DetailsScreen = ({ route, navigation }) => {
         return '#F44336';
       default:
         return theme.textSecondary;
+    }
+  };
+
+  const startTimer = () => {
+    const durationInSeconds = parseInt(exercise.duration) * 60;
+    setRemainingTime(durationInSeconds);
+    setTimerRunning(true);
+    const interval = setInterval(() => {
+      setRemainingTime(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setTimerRunning(false);
+          Alert.alert('Workout Complete! 🎉', 'Great job! You finished the exercise.');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    setTimerInterval(interval);
+  };
+
+  const pauseTimer = () => {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      setTimerInterval(null);
+    }
+    setTimerRunning(false);
+  };
+
+  const resetTimer = () => {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      setTimerInterval(null);
+    }
+    setTimerRunning(false);
+    setRemainingTime(0);
+  };
+
+  const formatTime = (seconds) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleStartWorkout = () => {
+    if (!timerRunning && remainingTime === 0) {
+      startTimer();
+      Alert.alert('Workout Started!', `Get ready for ${exercise.duration} minutes of exercise!`);
     }
   };
 
@@ -206,14 +264,46 @@ const DetailsScreen = ({ route, navigation }) => {
         </View>
       </ScrollView>
 
+      {(timerRunning || remainingTime > 0) && (
+        <View style={[styles.timerBar, { backgroundColor: theme.card, borderTopColor: theme.border }]}>
+          <View style={styles.timerDisplay}>
+            <Icon name="clock" size={20} color={remainingTime < 60 ? theme.error : theme.primary} />
+            <Text style={[styles.timerText, { color: remainingTime < 60 ? theme.error : theme.text }]}>
+              {formatTime(remainingTime)}
+            </Text>
+          </View>
+          <View style={styles.timerControls}>
+            <TouchableOpacity
+              style={[styles.timerControlButton, { backgroundColor: timerRunning ? theme.warning : theme.primary }]}
+              onPress={timerRunning ? pauseTimer : startTimer}
+            >
+              <Icon name={timerRunning ? "pause" : "play"} size={16} color="#FFFFFF" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.timerControlButton, { backgroundColor: theme.error }]}
+              onPress={resetTimer}
+            >
+              <Icon name="square" size={16} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       <View style={[styles.footer, { backgroundColor: theme.background, borderTopColor: theme.border }]}>
-        <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: theme.primary }]}
-          onPress={() => Alert.alert('Start Workout', 'Workout feature coming soon!')}
-        >
-          <Icon name="play" size={20} color="#FFFFFF" />
-          <Text style={styles.actionButtonText}>Start Workout</Text>
-        </TouchableOpacity>
+        {!timerRunning && remainingTime === 0 ? (
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: theme.primary }]}
+            onPress={handleStartWorkout}
+          >
+            <Icon name="play" size={20} color="#FFFFFF" />
+            <Text style={styles.actionButtonText}>Start Workout</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.workoutActive}>
+            <Icon name="activity" size={24} color={theme.primary} />
+            <Text style={[styles.workoutActiveText, { color: theme.text }]}>Workout in Progress</Text>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -377,6 +467,34 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
     borderTopWidth: 1,
   },
+  timerBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderTopWidth: 1,
+  },
+  timerDisplay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  timerText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    fontVariant: ['tabular-nums'],
+  },
+  timerControls: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  timerControlButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   actionButton: {
     flexDirection: 'row',
     height: 56,
@@ -387,6 +505,17 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  workoutActive: {
+    flexDirection: 'row',
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  workoutActiveText: {
     fontSize: 18,
     fontWeight: 'bold',
   },
