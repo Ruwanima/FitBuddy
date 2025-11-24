@@ -7,6 +7,7 @@ import {
   RefreshControl,
   Alert,
   TouchableOpacity,
+  TextInput,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Icon from 'react-native-vector-icons/Feather';
@@ -35,11 +36,26 @@ const HomeScreen = ({ navigation }) => {
   const theme = themeMode === THEME_MODE.LIGHT ? lightTheme : darkTheme;
 
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredExercises, setFilteredExercises] = useState([]);
 
   useEffect(() => {
     loadExercises();
     loadFavorites();
   }, []);
+
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredExercises(exercises);
+    } else {
+      const filtered = exercises.filter(exercise =>
+        exercise.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        exercise.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        exercise.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredExercises(filtered);
+    }
+  }, [searchQuery, exercises]);
 
   const loadExercises = async () => {
     dispatch(fetchExercisesStart());
@@ -94,6 +110,23 @@ const HomeScreen = ({ navigation }) => {
           {user?.firstName || user?.username || 'Fitness Enthusiast'}! 👋
         </Text>
       </View>
+      <View style={[styles.searchContainer, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Icon name="search" size={20} color={theme.textSecondary} style={styles.searchIcon} />
+        <TextInput
+          style={[styles.searchInput, { color: theme.text }]}
+          placeholder="Search exercises..."
+          placeholderTextColor={theme.textSecondary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+            <Icon name="x-circle" size={20} color={theme.textSecondary} />
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 
@@ -113,20 +146,20 @@ const HomeScreen = ({ navigation }) => {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <FlatList
-        data={exercises}
+        data={filteredExercises}
         renderItem={renderExerciseCard}
         keyExtractor={(item) => item.id.toString()}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={
           <EmptyState
             icon="activity"
-            title="No Exercises Found"
-            message="We couldn't load any exercises. Please check your connection and try again."
-            actionText="Retry"
-            onAction={loadExercises}
+            title={searchQuery ? "No Matches Found" : "No Exercises Found"}
+            message={searchQuery ? `No exercises match "${searchQuery}". Try a different search.` : "We couldn't load any exercises. Please check your connection and try again."}
+            actionText={searchQuery ? "Clear Search" : "Retry"}
+            onAction={searchQuery ? () => setSearchQuery('') : loadExercises}
           />
         }
-        contentContainerStyle={exercises.length === 0 ? styles.emptyContainer : styles.listContent}
+        contentContainerStyle={filteredExercises.length === 0 ? styles.emptyContainer : styles.listContent}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -157,6 +190,26 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 28,
     fontWeight: 'bold',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 8,
+  },
+  clearButton: {
+    padding: 4,
   },
   listContent: {
     paddingBottom: 20,
