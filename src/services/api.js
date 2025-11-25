@@ -85,6 +85,30 @@ export const authService = {
   },
 };
 
+// Custom fitness images array
+const customExerciseImages = [
+  'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=500', // Running
+  'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=500', // HIIT
+  'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=500', // Yoga
+  'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=500', // Strength
+  'https://images.unsplash.com/photo-1541625602330-2277a4c46182?w=500', // Cycling
+  'https://images.unsplash.com/photo-1519315901367-f34ff9154487?w=500', // Swimming
+  'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=500', // Pilates
+  'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=500', // Boxing
+  'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=500', // Dance
+  'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=500', // CrossFit
+  'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=500', // Stretching
+  'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=500', // Abs
+  'https://images.unsplash.com/photo-1434682881908-b43d0467b798?w=500', // Leg Day
+  'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=500', // Upper Body
+  'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=500', // Walk
+  'https://images.unsplash.com/photo-1518644730709-0835105d9daa?w=500', // Jump Rope
+  'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=500', // Kettlebell
+  'https://images.unsplash.com/photo-1550259979-ed79b48d2a30?w=500', // Bodyweight
+  'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=500', // Meditation
+  'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=500', // Sports
+];
+
 /**
  * Exercise/Fitness service using DummyJSON products as exercise data
  */
@@ -104,7 +128,7 @@ export const fitnessService = {
         difficulty: getDifficultyLevel(index),
         duration: Math.floor(Math.random() * 45) + 15, // 15-60 minutes
         calories: Math.floor(Math.random() * 400) + 100, // 100-500 calories
-        image: product.thumbnail || product.images?.[0] || 'https://via.placeholder.com/150',
+        image: customExerciseImages[index % customExerciseImages.length],
         rating: product.rating || 4.5,
         status: getExerciseStatus(index),
       }));
@@ -128,6 +152,7 @@ export const fitnessService = {
     try {
       const response = await api.get(`/products/${id}`);
       const product = response.data;
+      const imageIndex = (product.id - 1) % customExerciseImages.length;
       const exercise = {
         id: product.id,
         title: generateExerciseName(product.title, product.id),
@@ -136,8 +161,8 @@ export const fitnessService = {
         difficulty: getDifficultyLevel(product.id),
         duration: Math.floor(Math.random() * 45) + 15,
         calories: Math.floor(Math.random() * 400) + 100,
-        image: product.thumbnail || product.images?.[0],
-        images: product.images || [],
+        image: customExerciseImages[imageIndex],
+        images: [customExerciseImages[imageIndex]],
         rating: product.rating || 4.5,
         reviews: product.reviews || [],
         status: getExerciseStatus(product.id),

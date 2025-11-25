@@ -9,7 +9,11 @@ import {
   Alert,
   Modal,
   TextInput,
+  Dimensions,
 } from 'react-native';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const IS_LARGE_SCREEN = SCREEN_WIDTH > 768;
 import { useDispatch, useSelector } from 'react-redux';
 import Icon from 'react-native-vector-icons/Feather';
 import { logout, updateUser } from '../redux/authSlice';
@@ -28,8 +32,15 @@ const ProfileScreen = () => {
 
   const isDarkMode = themeMode === THEME_MODE.DARK;
 
-  // Set default user if not exists
-  const currentUser = user || {
+  // Set default user if not exists or add missing health data
+  const currentUser = user ? {
+    ...user,
+    age: user.age || '22',
+    weight: user.weight || '70',
+    height: user.height || '175',
+    phone: user.phone || '+94 77 123 4567',
+    goal: user.goal || 'Build Muscle'
+  } : {
     firstName: 'Pasindu',
     lastName: 'Ruwanima',
     email: 'pasindu@fitbuddy.com',
@@ -94,6 +105,7 @@ const ProfileScreen = () => {
   };
 
   const handleLogout = () => {
+    console.log('Logout button pressed');
     Alert.alert(
       'Logout',
       'Are you sure you want to logout?',
@@ -106,9 +118,14 @@ const ProfileScreen = () => {
           text: 'Logout',
           style: 'destructive',
           onPress: async () => {
-            await removeItem(STORAGE_KEYS.USER_TOKEN);
-            await removeItem(STORAGE_KEYS.USER_DATA);
-            dispatch(logout());
+            try {
+              await removeItem(STORAGE_KEYS.USER_TOKEN);
+              await removeItem(STORAGE_KEYS.USER_DATA);
+              dispatch(logout());
+              Alert.alert('Success', 'You have been logged out');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
           },
         },
       ]
@@ -189,7 +206,7 @@ const ProfileScreen = () => {
                     <Text style={[styles.bmiLabel, { color: theme.textSecondary }]}>Body Mass Index</Text>
                     <View style={styles.bmiValueRow}>
                       <Text style={[styles.bmiValue, { color: theme.text }]}>{calculateBMI()}</Text>
-                      <View style={[styles.bmiCategoryBadge, { backgroundColor: getBMICategory(calculateBMI()).color + '33' }]}>
+            <View style={[styles.bmiCategoryBadge, { backgroundColor: `${getBMICategory(calculateBMI()).color}33` }]}>
                         <Text style={[styles.bmiCategory, { color: getBMICategory(calculateBMI()).color }]}>
                           {getBMICategory(calculateBMI()).text}
                         </Text>
@@ -316,8 +333,9 @@ const ProfileScreen = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.menuItem}
+              style={[styles.menuItem, { borderBottomWidth: 0 }]}
               onPress={handleLogout}
+              activeOpacity={0.6}
             >
               <View style={styles.menuLeft}>
                 <Icon name="log-out" size={22} color={theme.error} />
@@ -475,46 +493,49 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    paddingVertical: 40,
-    paddingTop: 60,
+    paddingVertical: IS_LARGE_SCREEN ? 48 : 40,
+    paddingTop: IS_LARGE_SCREEN ? 70 : 60,
     position: 'relative',
   },
   editButton: {
     position: 'absolute',
     top: 20,
     right: 20,
-    padding: 8,
+    padding: IS_LARGE_SCREEN ? 10 : 8,
     zIndex: 1,
   },
   avatarContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: IS_LARGE_SCREEN ? 120 : 100,
+    height: IS_LARGE_SCREEN ? 120 : 100,
+    borderRadius: IS_LARGE_SCREEN ? 60 : 50,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: IS_LARGE_SCREEN ? 20 : 16,
   },
   headerName: {
-    fontSize: 24,
+    fontSize: IS_LARGE_SCREEN ? 28 : 24,
     fontWeight: 'bold',
     color: '#FFFFFF',
     marginBottom: 4,
   },
   headerEmail: {
-    fontSize: 16,
+    fontSize: IS_LARGE_SCREEN ? 17 : 16,
     color: 'rgba(255, 255, 255, 0.9)',
   },
   content: {
-    padding: 20,
+    padding: IS_LARGE_SCREEN ? 32 : 20,
+    maxWidth: IS_LARGE_SCREEN ? 800 : '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   section: {
-    marginBottom: 24,
+    marginBottom: IS_LARGE_SCREEN ? 28 : 24,
   },
   sectionTitle: {
-    fontSize: 12,
+    fontSize: IS_LARGE_SCREEN ? 13 : 12,
     fontWeight: '600',
-    marginBottom: 12,
+    marginBottom: IS_LARGE_SCREEN ? 14 : 12,
     marginLeft: 4,
     letterSpacing: 0.5,
   },
@@ -602,7 +623,6 @@ const styles = StyleSheet.create({
   menuLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
   },
   menuText: {
     fontSize: 16,
