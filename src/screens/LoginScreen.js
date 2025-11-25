@@ -9,6 +9,9 @@ import {
   Platform,
   ScrollView,
   Alert,
+  StatusBar,
+  Animated,
+  Image,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Icon from 'react-native-vector-icons/Feather';
@@ -21,11 +24,14 @@ import { lightTheme, darkTheme } from '../styles/theme';
 import { THEME_MODE } from '../utils/constants';
 import LoadingSpinner from '../components/LoadingSpinner';
 
+const LOGO_URL = 'https://play-lh.googleusercontent.com/2LM9q5XVzX7O5L_8HeZ_b_N8PybAB6EiS_N92kAtpfR56tLfjHdbNA-hX3N4g6pCH2INAQl6r8jGusfALP2l';
+
 const LoginScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [focusedField, setFocusedField] = useState(null);
 
   const dispatch = useDispatch();
   const { loading } = useSelector((state) => state.auth);
@@ -64,7 +70,6 @@ const LoginScreen = ({ navigation }) => {
         lastName: result.data.lastName,
       };
 
-      // Save to secure storage
       await setItem(STORAGE_KEYS.USER_TOKEN, result.data.token);
       await setItem(STORAGE_KEYS.USER_DATA, userData);
 
@@ -91,17 +96,29 @@ const LoginScreen = ({ navigation }) => {
       style={[styles.container, { backgroundColor: theme.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <StatusBar
+        barStyle={themeMode === THEME_MODE.LIGHT ? 'dark-content' : 'light-content'}
+        backgroundColor={theme.background}
+      />
+      
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <View style={[styles.iconContainer, { backgroundColor: theme.primary }]}>
-            <Icon name="activity" size={48} color="#FFFFFF" />
+          <View style={[styles.logoContainer, { 
+            backgroundColor: `${theme.primary}08`,
+          }]}>
+            <Image 
+              source={{ uri: LOGO_URL }}
+              style={styles.logo}
+              resizeMode="contain"
+            />
           </View>
-          <Text style={[styles.title, { color: theme.text }]}>FitBuddy</Text>
+          <Text style={[styles.title, { color: theme.text }]}>Welcome Back!</Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            Your Personal Fitness Companion
+            Sign in to continue your fitness journey
           </Text>
         </View>
 
@@ -119,19 +136,47 @@ const LoginScreen = ({ navigation }) => {
                   setUsername(text);
                   if (errors.username) setErrors({ ...errors, username: null });
                 }}
+                onFocus={() => setFocusedField('username')}
+                onBlur={() => setFocusedField(null)}
                 autoCapitalize="none"
                 autoCorrect={false}
               />
+              {username.length > 0 && (
+                <View style={[styles.checkCircle, { backgroundColor: '#4CAF5015' }]}>
+                  <Icon name="check" size={16} color="#4CAF50" />
+                </View>
+              )}
             </View>
             {errors.username && (
-              <Text style={[styles.errorText, { color: theme.error }]}>{errors.username}</Text>
+              <View style={styles.errorContainer}>
+                <Icon name="alert-circle" size={14} color={theme.error} />
+                <Text style={[styles.errorText, { color: theme.error }]}>{errors.username}</Text>
+              </View>
             )}
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={[styles.label, { color: theme.text }]}>Password</Text>
-            <View style={[styles.inputWrapper, { backgroundColor: theme.surface, borderColor: errors.password ? theme.error : theme.border }]}>
-              <Icon name="lock" size={20} color={theme.icon} style={styles.inputIcon} />
+            <View style={[
+              styles.inputWrapper, 
+              { 
+                backgroundColor: theme.surface, 
+                borderColor: errors.password 
+                  ? theme.error 
+                  : focusedField === 'password' 
+                    ? theme.primary 
+                    : theme.border,
+                borderWidth: focusedField === 'password' ? 2 : 1.5,
+                shadowColor: focusedField === 'password' ? theme.primary : 'transparent',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.1,
+                shadowRadius: 8,
+                elevation: focusedField === 'password' ? 4 : 0,
+              }
+            ]}>
+              <View style={[styles.iconCircle, { backgroundColor: `${theme.primary}15` }]}>
+                <Icon name="lock" size={20} color={theme.primary} />
+              </View>
               <TextInput
                 style={[styles.input, { color: theme.text }]}
                 placeholder="Enter your password"
@@ -141,46 +186,90 @@ const LoginScreen = ({ navigation }) => {
                   setPassword(text);
                   if (errors.password) setErrors({ ...errors, password: null });
                 }}
+                onFocus={() => setFocusedField('password')}
+                onBlur={() => setFocusedField(null)}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
               />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <TouchableOpacity 
+                onPress={() => setShowPassword(!showPassword)}
+                style={[styles.eyeButton, { backgroundColor: theme.background }]}
+                activeOpacity={0.7}
+              >
                 <Icon name={showPassword ? 'eye-off' : 'eye'} size={20} color={theme.icon} />
               </TouchableOpacity>
             </View>
             {errors.password && (
-              <Text style={[styles.errorText, { color: theme.error }]}>{errors.password}</Text>
+              <View style={styles.errorContainer}>
+                <Icon name="alert-circle" size={14} color={theme.error} />
+                <Text style={[styles.errorText, { color: theme.error }]}>{errors.password}</Text>
+              </View>
             )}
           </View>
 
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: theme.primary }]}
+            style={[styles.button, { 
+              backgroundColor: theme.primary,
+              shadowColor: theme.primary,
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.3,
+              shadowRadius: 12,
+              elevation: 6,
+            }]}
             onPress={handleLogin}
+            activeOpacity={0.9}
           >
-            <Text style={styles.buttonText}>Login</Text>
+            <View style={styles.buttonContent}>
+              <Text style={styles.buttonText}>Sign In</Text>
+              <View style={styles.buttonIconContainer}>
+                <Icon name="arrow-right" size={20} color="#FFFFFF" />
+              </View>
+            </View>
           </TouchableOpacity>
 
           <View style={styles.divider}>
             <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
-            <Text style={[styles.dividerText, { color: theme.textSecondary }]}>OR</Text>
+            <View style={[styles.dividerCircle, { 
+              backgroundColor: theme.background,
+              borderColor: theme.border,
+            }]}>
+              <Text style={[styles.dividerText, { color: theme.textSecondary }]}>OR</Text>
+            </View>
             <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
           </View>
 
           <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: theme.border }]}
+            style={[styles.secondaryButton, { 
+              borderColor: theme.border,
+              backgroundColor: theme.surface,
+            }]}
             onPress={() => navigation.navigate('Register')}
+            activeOpacity={0.8}
           >
+            <Icon name="user-plus" size={20} color={theme.text} />
             <Text style={[styles.secondaryButtonText, { color: theme.text }]}>
               Create New Account
             </Text>
           </TouchableOpacity>
 
-          <View style={styles.demoInfo}>
-            <Icon name="info" size={16} color={theme.secondary} />
-            <Text style={[styles.demoText, { color: theme.textSecondary }]}>
-              Demo: username: emilys, password: emilyspass
-            </Text>
-          </View>
+          {/* <View style={[styles.demoInfo, { 
+            backgroundColor: `${theme.secondary}10`,
+            borderLeftWidth: 3,
+            borderLeftColor: theme.secondary,
+          }]}>
+            <View style={[styles.demoIconContainer, { backgroundColor: `${theme.secondary}15` }]}>
+              <Icon name="info" size={18} color={theme.secondary} />
+            </View>
+            <View style={styles.demoTextContainer}>
+              <Text style={[styles.demoTitle, { color: theme.text }]}>Demo Account</Text>
+              <Text style={[styles.demoText, { color: theme.textSecondary }]}>
+                Username: <Text style={styles.demoBold}>emilys</Text>
+              </Text>
+              <Text style={[styles.demoText, { color: theme.textSecondary }]}>
+                Password: <Text style={styles.demoBold}>emilyspass</Text>
+              </Text>
+            </View>
+          </View> */}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -200,102 +289,183 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 48,
   },
-  iconContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+  logoContainer: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
+    padding: 20,
+  },
+  logo: {
+    width: 100,
+    height: 100,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 36,
+    fontWeight: '800',
     marginBottom: 8,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
     textAlign: 'center',
+    fontWeight: '500',
   },
   form: {
     width: '100%',
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 10,
+    letterSpacing: 0.2,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 16,
     paddingHorizontal: 16,
-    height: 56,
+    height: 60,
   },
-  inputIcon: {
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 12,
   },
   input: {
     flex: 1,
     fontSize: 16,
+    fontWeight: '500',
+  },
+  checkCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  eyeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    marginLeft: 4,
+    gap: 6,
   },
   errorText: {
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 4,
+    fontSize: 13,
+    fontWeight: '600',
   },
   button: {
-    height: 56,
-    borderRadius: 12,
+    height: 60,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
   },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   buttonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  buttonIconContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
+    marginVertical: 32,
+    position: 'relative',
   },
   dividerLine: {
     flex: 1,
-    height: 1,
+    height: 1.5,
+  },
+  dividerCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: -25,
+    zIndex: 1,
   },
   dividerText: {
-    marginHorizontal: 16,
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 1,
   },
   secondaryButton: {
-    height: 56,
-    borderRadius: 12,
+    height: 60,
+    borderRadius: 16,
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
+    gap: 10,
   },
   secondaryButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   demoInfo: {
     flexDirection: 'row',
-    alignItems: 'center',
+    marginTop: 32,
+    padding: 16,
+    borderRadius: 12,
+    gap: 14,
+  },
+  demoIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
-    marginTop: 24,
-    padding: 12,
-    gap: 8,
+    alignItems: 'center',
+  },
+  demoTextContainer: {
+    flex: 1,
+  },
+  demoTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 6,
   },
   demoText: {
-    fontSize: 13,
-    fontStyle: 'italic',
+    fontSize: 14,
+    marginBottom: 2,
+    fontWeight: '500',
+  },
+  demoBold: {
+    fontWeight: '700',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
 });
 
