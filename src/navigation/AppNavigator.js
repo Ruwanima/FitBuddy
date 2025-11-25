@@ -40,8 +40,11 @@ const AppNavigator = () => {
 
       // Load saved favorites
       const savedFavorites = await getItem(STORAGE_KEYS.FAVORITES);
-      if (savedFavorites) {
+      console.log('Loaded favorites from storage:', savedFavorites?.length || 0);
+      if (savedFavorites && Array.isArray(savedFavorites)) {
         dispatch(setFavorites(savedFavorites));
+      } else {
+        dispatch(setFavorites([]));
       }
     } catch (error) {
       console.error('Error loading saved data:', error);
